@@ -1,0 +1,107 @@
+# ============================================================
+# GitHub Actions Workflow: Auto Documentation Generator
+# ============================================================
+# Triggers:
+#   - Manual dispatch (provide a target GitHub repo URL)
+#   - Push to main (re-documents THIS repo as a demo)
+#
+# Model: distilgpt2 (approx 350 MB) - fully open-source, no API key needed
+# Framework: Hugging Face Transformers (CPU inference)
+# ============================================================
+
+name: Generate Documentation
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'GitHub repo to document (e.g. owner/repo or full URL)'
+        required: true
+        default: 'PranayMahendrakar/auto-doc-generator'
+      github_token_for_target:
+        description: 'PAT for private repos (leave blank for public repos)'
+        required: false
+        default: ''
+
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs_output/**'
+      - 'README.md'
+
+jobs:
+  generate-docs:
+    name: Generate Docs with DistilGPT-2
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers>=4.38.0 accelerate>=0.27.0 requests>=2.31.0
+
+      - name: Cache HuggingFace model weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-distilgpt2-v1
+
+      - name: Set target repo variable
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TARGET_REPO=${{ github.event.inputs.target_repo }}" >> $GITHUB_ENV
+          else
+            echo "TARGET_REPO=${{ github.repository }}" >> $GITHUB_ENV
+          fi
+
+      - name: Generate documentation
+        env:
+          GITHUB_PAT: ${{ github.event.inputs.github_token_for_target }}
+        run: |
+          echo "Generating docs for: $TARGET_REPO"
+          if [ -n "$GITHUB_PAT" ]; then
+            python generate_docs.py "$TARGET_REPO" --token "$GITHUB_PAT" --output docs_output
+          else
+            python generate_docs.py "$TARGET_REPO" --output docs_output
+          fi
+
+      - name: Show generated files
+        run: |
+          echo '=== Generated Documentation Files ==='
+          ls -lh docs_output/
+          echo ''
+          echo '=== README Preview (first 40 lines) ==='
+          head -40 docs_output/README.md || true
+          echo ''
+          echo '=== manifest.json ==='
+          cat docs_output/manifest.json
+
+      - name: Commit generated documentation
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add docs_output/
+          git diff --staged --quiet || git commit -m 'docs: auto-generated documentation for $TARGET_REPO [skip ci]'
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs-${{ github.run_number }}
+          path: docs_output/
+          retention-days: 30
