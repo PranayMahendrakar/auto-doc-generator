@@ -9,6 +9,10 @@ graph TD
     ROOT --> _github
     _github_workflows["workflows/"]
     _github --> _github_workflows
+    docs["docs/"]
+    ROOT --> docs
+    docs_output["docs_output/"]
+    ROOT --> docs_output
 ```
 
 ## Directory Overview
@@ -16,3 +20,5 @@ graph TD
 | Directory | Purpose |
 |-----------|---------|
 | `.github/workflows/` | — |
+| `docs/` | — |
+| `docs_output/` | — |
