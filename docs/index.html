@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Doc Generator — AI Documentation for Any GitHub Repo</title>
+  <meta name="description" content="AI-powered documentation generator using open-source models. No API keys. Generates README, API docs, architecture diagrams and setup guides automatically." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --blue: #58a6ff;
+      --orange: #f78166;
+      --purple: #bc8cff;
+      --yellow: #e3b341;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --text-bright: #f0f6fc;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 60px;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; color: var(--text-bright); text-decoration: none; }
+    .nav-logo svg { width: 28px; height: 28px; }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text-bright); }
+    .nav-cta {
+      background: var(--accent); color: #fff; border: none; border-radius: 6px;
+      padding: 8px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: background .2s;
+    }
+    .nav-cta:hover { background: var(--accent-hover); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 6rem 2rem 4rem;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(35,134,54,0.15) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(88,166,255,0.08) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(35,134,54,0.15); border: 1px solid rgba(35,134,54,0.4);
+      color: #3fb950; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600;
+      margin-bottom: 1.5rem; letter-spacing: 0.5px;
+    }
+    .hero-badge::before { content: "●"; font-size: 0.6rem; }
+    h1 {
+      font-size: clamp(2.4rem, 6vw, 4.5rem);
+      font-weight: 800; line-height: 1.1;
+      color: var(--text-bright);
+      margin-bottom: 1.2rem;
+    }
+    h1 span { color: var(--blue); }
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--text-muted); max-width: 640px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 3rem; }
+    .btn-primary {
+      background: var(--accent); color: #fff; border-radius: 8px;
+      padding: 12px 28px; font-size: 1rem; font-weight: 600;
+      text-decoration: none; transition: all .2s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(35,134,54,0.35); }
+    .btn-secondary {
+      background: var(--surface); color: var(--text-bright); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 28px; font-size: 1rem; font-weight: 600;
+      text-decoration: none; transition: all .2s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-secondary:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+
+    /* terminal window */
+    .terminal {
+      background: #010409; border: 1px solid var(--border); border-radius: 12px;
+      width: 100%; max-width: 700px; text-align: left; overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    }
+    .terminal-bar {
+      background: var(--surface); padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+    .terminal-title { flex: 1; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
+    .terminal-body { padding: 1.2rem 1.5rem; font-family: "JetBrains Mono", monospace; font-size: 0.82rem; line-height: 1.8; }
+    .t-prompt { color: #3fb950; }
+    .t-cmd { color: var(--text-bright); }
+    .t-comment { color: var(--text-muted); }
+    .t-out { color: var(--yellow); }
+    .t-file { color: var(--blue); }
+    .t-ok { color: #3fb950; }
+
+    /* ── OUTPUTS SECTION ── */
+    .section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-label { font-size: 0.78rem; font-weight: 600; color: var(--accent-hover); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.6rem; }
+    h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; color: var(--text-bright); margin-bottom: 0.8rem; }
+    .section-desc { color: var(--text-muted); font-size: 1.05rem; max-width: 560px; margin-bottom: 3rem; }
+
+    .outputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem; }
+    .output-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; transition: all .25s;
+    }
+    .output-card:hover { border-color: var(--blue); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+    .output-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .output-card h3 { font-size: 1rem; font-weight: 600; color: var(--text-bright); margin-bottom: 0.4rem; }
+    .output-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+    .output-tag {
+      display: inline-block; background: rgba(88,166,255,0.1); color: var(--blue);
+      border: 1px solid rgba(88,166,255,0.25); border-radius: 4px;
+      font-size: 0.72rem; font-family: "JetBrains Mono", monospace;
+      padding: 2px 8px; margin-top: 0.6rem;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; position: relative; }
+    .step { text-align: center; }
+    .step-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; color: #fff; margin: 0 auto 1rem;
+    }
+    .step h3 { font-size: 1rem; font-weight: 600; color: var(--text-bright); margin-bottom: 0.4rem; }
+    .step p { font-size: 0.88rem; color: var(--text-muted); }
+
+    /* ── TECH STACK ── */
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .stack-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem;
+      transition: border-color .2s;
+    }
+    .stack-card:hover { border-color: var(--purple); }
+    .stack-card .tag-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
+    .stack-card .tag-value { font-size: 0.95rem; font-weight: 600; color: var(--text-bright); }
+    .stack-card .tag-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* ── MODELS TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--surface); color: var(--text-muted); font-weight: 600; text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 16px; border-bottom: 1px solid rgba(48,54,61,0.5); color: var(--text); }
+    tr:hover td { background: rgba(22,27,34,0.6); }
+    .badge-used { background: rgba(35,134,54,0.2); color: #3fb950; border: 1px solid rgba(35,134,54,0.4); border-radius: 4px; font-size: 0.72rem; padding: 2px 8px; font-weight: 600; }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(35,134,54,0.12) 0%, rgba(88,166,255,0.08) 100%);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 4rem 2rem; text-align: center; margin: 4rem auto;
+      max-width: 1100px;
+    }
+    .cta-section h2 { margin-bottom: 0.8rem; }
+    .cta-section p { color: var(--text-muted); margin-bottom: 2rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border); text-align: center;
+      padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+    </svg>
+    auto-doc-generator
+  </a>
+  <ul class="nav-links">
+    <li><a href="#outputs">Outputs</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#stack">Tech Stack</a></li>
+  </ul>
+  <a href="https://github.com/PranayMahendrakar/auto-doc-generator" class="nav-cta" target="_blank">View on GitHub</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Open Source · No API Keys · Runs Locally</div>
+  <h1>AI That Writes Docs<br/>for <span>Any GitHub Repo</span></h1>
+  <p class="hero-sub">
+    Point it at any repository. Get a README, API docs, architecture diagram,
+    and setup guide — generated automatically using open-source local models.
+  </p>
+  <div class="hero-buttons">
+    <a href="https://github.com/PranayMahendrakar/auto-doc-generator" class="btn-primary" target="_blank">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      Star on GitHub
+    </a>
+    <a href="#how" class="btn-secondary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      See How It Works
+    </a>
+  </div>
+
+  <!-- Terminal Demo -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <span class="terminal-title">bash — auto-doc-generator</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-comment"># Generate docs for any public GitHub repo</span></div>
+      <div><span class="t-prompt">$ </span><span class="t-cmd">python generate_docs.py PranayMahendrakar/auto-doc-generator</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-out">📦 Fetching metadata for PranayMahendrakar/auto-doc-generator …</span></div>
+      <div><span class="t-out">🤖 Loading DistilGPT-2 model (runs fully offline) …</span></div>
+      <div><span class="t-out">🤖 Running local LLM inference (DistilGPT-2) …</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-ok">✅ Documentation written to ./docs_output/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;<span class="t-file">• README.md</span></div>
+      <div>&nbsp;&nbsp;&nbsp;<span class="t-file">• API_DOCS.md</span></div>
+      <div>&nbsp;&nbsp;&nbsp;<span class="t-file">• ARCHITECTURE.md</span></div>
+      <div>&nbsp;&nbsp;&nbsp;<span class="t-file">• SETUP_GUIDE.md</span></div>
+      <div>&nbsp;&nbsp;&nbsp;<span class="t-file">• manifest.json</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- OUTPUTS -->
+<section class="section" id="outputs">
+  <div class="section-label">What Gets Generated</div>
+  <h2>Four Documents. Zero Effort.</h2>
+  <p class="section-desc">Every run produces a complete documentation suite committed directly back to your repo.</p>
+  <div class="outputs-grid">
+    <div class="output-card">
+      <div class="output-icon">📄</div>
+      <h3>README.md</h3>
+      <p>Project overview with badges, feature list, description, and usage examples derived from your source code.</p>
+      <span class="output-tag">README.md</span>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">📚</div>
+      <h3>API Documentation</h3>
+      <p>Function signatures, parameters, return values, and inline code examples extracted from your codebase.</p>
+      <span class="output-tag">API_DOCS.md</span>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">🗺️</div>
+      <h3>Architecture Diagram</h3>
+      <p>A Mermaid.js flowchart of your directory structure — renders natively inside GitHub with no plugins.</p>
+      <span class="output-tag">ARCHITECTURE.md</span>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">⚙️</div>
+      <h3>Setup Guide</h3>
+      <p>Step-by-step installation, configuration, and first-run instructions tailored to your project stack.</p>
+      <span class="output-tag">SETUP_GUIDE.md</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-label">How It Works</div>
+  <h2>Simple 4-Step Pipeline</h2>
+  <p class="section-desc">From repo URL to full documentation suite in under 2 minutes.</p>
+  <div class="steps-wrap">
+    <div class="step"><div class="step-num">1</div><h3>Scan Repo</h3><p>GitHub REST API fetches your file tree, source code snippets, and config files.</p></div>
+    <div class="step"><div class="step-num">2</div><h3>Local LLM</h3><p>DistilGPT-2 runs entirely on-device via Hugging Face Transformers — no internet calls, no API keys.</p></div>
+    <div class="step"><div class="step-num">3</div><h3>Write Docs</h3><p>Four document writers craft README, API docs, setup guide, and a Mermaid diagram from the output.</p></div>
+    <div class="step"><div class="step-num">4</div><h3>Auto Commit</h3><p>GitHub Actions commits the generated docs back to <code style="color:var(--blue);font-size:0.85em">docs_output/</code> and uploads a downloadable artifact.</p></div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- MODELS -->
+<section class="section" id="models">
+  <div class="section-label">Model Options</div>
+  <h2>No API Keys. Ever.</h2>
+  <p class="section-desc">All inference runs locally. Swap models by changing one line in <code style="color:var(--blue)">generate_docs.py</code>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Model</th><th>Size</th><th>RAM</th><th>Quality</th><th>Framework</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><strong>distilgpt2</strong></td><td>~350 MB</td><td>1 GB</td><td>Basic</td><td>Hugging Face Transformers</td><td><span class="badge-used">✓ Default</span></td></tr>
+        <tr><td>gpt2-medium</td><td>1.5 GB</td><td>4 GB</td><td>Better</td><td>Hugging Face Transformers</td><td></td></tr>
+        <tr><td>microsoft/phi-2</td><td>~5 GB</td><td>6 GB</td><td>Excellent</td><td>Hugging Face Transformers</td><td></td></tr>
+        <tr><td>llama.cpp models</td><td>Varies</td><td>Varies</td><td>Best</td><td>llama.cpp (local)</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- TECH STACK -->
+<section class="section" id="stack">
+  <div class="section-label">Tech Stack</div>
+  <h2>Built With Open Source</h2>
+  <p class="section-desc">Every component is free, open-source, and runs without a paid account.</p>
+  <div class="stack-grid">
+    <div class="stack-card"><div class="tag-label">LLM</div><div class="tag-value">DistilGPT-2</div><div class="tag-desc">HuggingFace Hub</div></div>
+    <div class="stack-card"><div class="tag-label">Inference</div><div class="tag-value">Transformers</div><div class="tag-desc">CPU · pip install</div></div>
+    <div class="stack-card"><div class="tag-label">Repo Scanning</div><div class="tag-value">GitHub API</div><div class="tag-desc">REST · no auth needed</div></div>
+    <div class="stack-card"><div class="tag-label">Diagrams</div><div class="tag-value">Mermaid.js</div><div class="tag-desc">Renders in GitHub</div></div>
+    <div class="stack-card"><div class="tag-label">CI / CD</div><div class="tag-value">GitHub Actions</div><div class="tag-desc">Free runner · cached</div></div>
+    <div class="stack-card"><div class="tag-label">Language</div><div class="tag-value">Python 3.11</div><div class="tag-desc">No extra runtime</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div style="padding: 0 2rem;">
+  <div class="cta-section">
+    <h2>Ready to Document Your Repo?</h2>
+    <p>Fork the project, trigger the workflow, and get full docs in &lt; 2 minutes.</p>
+    <div class="hero-buttons" style="justify-content:center">
+      <a href="https://github.com/PranayMahendrakar/auto-doc-generator/fork" class="btn-primary" target="_blank">Fork on GitHub</a>
+      <a href="https://github.com/PranayMahendrakar/auto-doc-generator/actions" class="btn-secondary" target="_blank">View Workflow Runs</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>Built by <a href="https://github.com/PranayMahendrakar" target="_blank">@PranayMahendrakar</a> &nbsp;·&nbsp;
+  <a href="https://github.com/PranayMahendrakar/auto-doc-generator" target="_blank">GitHub Repo</a> &nbsp;·&nbsp;
+  Powered by <a href="https://huggingface.co/distilgpt2" target="_blank">DistilGPT-2</a> &amp; Hugging Face Transformers</p>
+</footer>
+
+</body>
+</html>
