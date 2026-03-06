@@ -1,0 +1,11 @@
+{
+  "repo": "PranayMahendrakar/auto-doc-generator",
+  "generated_files": [
+    "README.md",
+    "API_DOCS.md",
+    "SETUP_GUIDE.md",
+    "ARCHITECTURE.md"
+  ],
+  "model": "distilgpt2",
+  "framework": "Hugging Face Transformers"
+}
