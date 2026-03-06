@@ -1,0 +1,13 @@
+# Core dependencies for auto-doc-generator
+# No API keys required — all models run locally
+
+# GitHub API access
+requests>=2.31.0
+
+# Hugging Face Transformers (local inference)
+transformers>=4.38.0
+torch>=2.2.0           # CPU-only build is fine
+accelerate>=0.27.0
+
+# Diagram / output utilities
+pathlib2>=2.3.7        # backport, stdlib pathlib is used on Python 3.6+
